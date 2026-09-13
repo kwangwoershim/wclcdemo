@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WCLC 2026观察：从靶向药研究数据到肺癌治疗趋势</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #0d1b2a;
+            font-family: 'Noto Sans SC', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #1e293b;
+            padding: 20px 0;
+        }
+
+        /* 电子刊物主容器 (模拟竖版 4:3 比例或标准精致开本，整体采用宽度固定、高度美观的高端版式) */
+        .magazine-container {
+            position: relative;
+            width: 840px;
+            height: 1120px;
+            background: #ffffff;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        /* 页面统一样式 */
+        .page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            background: #ffffff;
+            padding: 50px 60px;
+            user-select: none;
+        }
+
+        .page.active {
+            display: flex;
+        }
+
+        /* 第 1 页：封面样式全屏铺满裁切 */
+        .page.cover-page {
+            padding: 0;
+            background: #0b1329;
+        }
+
+        .cover-image-wrapper {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .cover-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        /* 页眉与页脚通用组件 */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #004e89;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .page-header .magazine-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #004e89;
+            letter-spacing: 1px;
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        .page-header .page-tag {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .page-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 15px;
+            margin-top: auto;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        /* 目录页专用网格排版 */
+        .toc-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px 30px;
+            align-content: start;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .toc-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 14px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border-left: 4px solid #004e89;
+            transition: transform 0.2s;
+        }
+
+        .toc-item:hover {
+            background: #f1f5f9;
+        }
+
+        .toc-num {
+            font-size: 15px;
+            font-weight: 700;
+            color: #004e89;
+            font-family: 'Noto Serif SC', serif;
+            min-width: 24px;
+        }
+
+        .toc-text h4 {
+            font-size: 14px;
+            color: #0f172a;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .toc-text p {
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.3;
+        }
+
+        /* 研究内容页专用精细排版 */
+        .research-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .research-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 12px;
+            line-height: 1.4;
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        .research-authors {
+            font-size: 12px;
+            color: #334155;
+            background: #f8fafc;
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+            border: 1px solid #e2e8f0;
+        }
+
+        .section-block {
+            margin-bottom: 12px;
+        }
+
+        .section-block h3 {
+            font-size: 14px;
+            color: #004e89;
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .section-block h3::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 14px;
+            background-color: #004e89;
+            border-radius: 2px;
+        }
+
+        .section-block p {
+            font-size: 12.5px;
+            color: #334155;
+            line-height: 1.6;
+            text-align: justify;
+        }
+
+        /* 底部悬浮控制条（左右翻页） */
+        .controls-bar {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .nav-btn {
+            background-color: #004e89;
+            color: white;
+            border: none;
+            padding: 10px 28px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 78, 137, 0.3);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn:hover {
+            background-color: #003366;
+            transform: translateY(-1px);
+        }
+
+        .nav-btn:disabled {
+            background-color: #cbd5e1;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .page-indicator {
+            font-size: 16px;
+            color: #94a3b8;
+            font-weight: 600;
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        /* 自定义滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="magazine-container" id="magazine">
+        
+        <!-- 第 1 页：封面 -->
+        <div class="page cover-page active">
+            <div class="cover-image-wrapper">
+                <img src="image_0b0e4e.jpg" alt="WCLC 2026观察 封面">
+            </div>
+        </div>
+
+        <!-- 第 2 页：目录 -->
+        <div class="page">
+            <div class="page-header">
+                <span class="magazine-title">WCLC 2026观察：从靶向药研究数据到肺癌治疗趋势</span>
+                <span class="page-tag">本期目录</span>
+            </div>
+            
+            <div class="toc-content">
+                <div class="toc-item" style="grid-column: span 2;">
+                    <div class="toc-num">-</div>
+                    <div class="toc-text">
+                        <h4>前言</h4>
+                        <p>WCLC 2026靶向治疗总体观察与前沿趋势纵览</p>
+                    </div>
+                </div>
+
+                <div class="toc-item">
+                    <div class="toc-num">01</div>
+                    <div class="toc-text">
+                        <h4>EGFR</h4>
+                        <p>从经典EGFR到Exon 20：一线强化、围术期、耐药</p>
+                    </div>
+                </div>
+
+                <div class="toc-item">
+                    <div class="toc-num">02</div>
+                    <div class="toc-text">
+                        <h4>ALK</h4>
+                        <p>从术后辅助到新一代TKI：治疗前移与长期控制</p>
+                    </div>
+                </div>
+
+                <div class="toc-item">
+                    <div class="toc-num">03</div>
+                    <div class="toc-text">
+                        <h4>ROS1</h4>
+                        <p>从“有效”走向CNS与耐药覆盖</p>
+                    </div>
+                </div>
+
+                <div class="toc-item">
+                    <div class="toc-num">04</div>
+                    <div class="toc-text">
+                        <h4>HER2</h4>
+                        <p>HER2突变NSCLC进入ADC竞争时代</p>
+                    </div>
+                </div>
+
+                <div class="toc-item">
+                    <div class="toc-num">05</div>
+                    <div class="toc-text">
+                        <h4>KRAS</h4>
+                        <p>从G12C走向G12D及更广泛RAS靶向</p>
+                    </div>
+                </div>
+
+                <div class="toc-item">
+                    <div class="toc-num">06</div>
+                    <div class="toc-text">
+                        <h4>TROP2 / B7-H3</h4>
+                        <p>ADC从新模式走向大规模临床竞争</p>
+                    </div>
+                </div>
+
+                <div class="toc-item">
+                    <div class="toc-num">07</div>
+                    <div class="toc-text">
+                        <h4>其他靶点</h4>
+                        <p>MET、RET等前沿进展速递</p>
+                    </div>
+                </div>
+
+                <div class="toc-item" style="grid-column: span 2;">
+                    <div class="toc-num">结语</div>
+                    <div class="toc-text">
+                        <h4>从“能否靶向”走向“如何选择靶向药”</h4>
+                        <p>精准治疗时代的临床决策思考与展望</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-footer">
+                <span>WCLC 2026 专栏速递</span>
+                <span>第 2 页 / 共 3 页</span>
+            </div>
+        </div>
+
+        <!-- 第 3 页：研究内容 Demo (KRAS G12C) -->
+        <div class="page">
+            <div class="page-header">
+                <span class="magazine-title">WCLC 2026临床前沿速递</span>
+                <span class="page-tag">KRAS G12C</span>
+            </div>
+
+            <div class="research-content">
+                <div class="research-title">OA04.04｜新辅助Divarasib治疗显示可控的安全性及初步良好疗效：可切除KRAS G12C阳性NSCLC患者NAUTIKA1研究更新数据</div>
+                
+                <div class="research-authors">
+                    <strong>作者团队：</strong>J.E. Chaft¹, A. Cummings², N. Mohindra³, M.V. Negrao⁴, K. He⁵, S.Y. Kim⁶, A. Saltos⁷, T. Patil⁸, E. Shum⁹, P. Lammers¹⁰, K. Schulze¹¹, Q. Zhu¹¹, M. Lin¹¹, E. Brandao¹¹, C. Ngiam¹¹, I. Bara¹¹, J.M. Lee²<br>
+                    <span style="color: #64748b; font-size: 11px;">¹ Memorial Sloan Kettering Cancer Center 等全球多家顶尖医学中心</span>
+                </div>
+
+                <div class="section-block">
+                    <h3>研究背景</h3>
+                    <p>II期NAUTIKA1研究（NCT04302025）首次公布的结果显示，对于可切除、早期KRAS G12C阳性非小细胞肺癌（NSCLC）患者，新一代口服KRAS G12C抑制剂divarasib用于新辅助治疗具有可控的安全性，并表现出初步良好的抗肿瘤活性。本次报告进一步更新该队列的数据。</p>
+                </div>
+
+                <div class="section-block">
+                    <h3>研究方法</h3>
+                    <p>纳入年龄≥18岁、分期为IB–IIIB期（T3N2除外）的KRAS G12C阳性NSCLC患者，接受divarasib 400 mg每日1次新辅助治疗8周，随后接受手术。术后根据PD-L1表达水平实施个体化辅助治疗。主要终点为新辅助divarasib治疗的安全性及可行性；次要终点包含主要病理缓解（MPR）、病理完全缓解（pCR）、影像学ORR及淋巴结降期等。</p>
+                </div>
+
+                <div class="section-block">
+                    <h3>研究结果</h3>
+                    <p>截至2026年2月9日，共20例患者入组。19例患者接受了手术切除，原发肿瘤均实现R0切除且无术中并发症。新辅助及辅助治疗期间常见不良事件为腹泻和恶心，多为1–2级且无患者因AE停药。疗效方面：MPR率为42%；pCR率为16%；影像学ORR为55%；临床降期率为40%；病理性淋巴结降期率为37%（降期至N0占32%）。</p>
+                </div>
+
+                <div class="section-block">
+                    <h3>结论</h3>
+                    <p>NAUTIKA1研究更新数据显示，divarasib单药用于可切除、早期KRAS G12C阳性NSCLC新辅助治疗具有可行性，安全性总体可控，并表现出良好的初步抗肿瘤活性。基于此结果，该药将在Krascendo 3 III期研究中进一步探索其在早期NSCLC中的治疗价值。</p>
+                </div>
+            </div>
+
+            <div class="page-footer">
+                <span>WCLC 2026 临床前沿</span>
+                <span>第 3 页 / 共 3 页</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 底部翻页控制器 -->
+    <div class="controls-bar">
+        <button class="nav-btn" id="prev-btn" onclick="changePage(-1)"><i class="fa-solid fa-chevron-left"></i> 上一页</button>
+        <span class="page-indicator" id="page-indicator">第 1 / 3 页</span>
+        <button class="nav-btn" id="next-btn" onclick="changePage(1)">下一页 <i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+
+    <script>
+        let currentPage = 0;
+        const pages = document.querySelectorAll('.page');
+        const totalPages = pages.length;
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const pageIndicator = document.getElementById('page-indicator');
+
+        function updateMagazine() {
+            pages.forEach((page, index) => {
+                if (index === currentPage) {
+                    page.classList.add('active');
+                } else {
+                    page.classList.remove('active');
+                }
+            });
+
+            pageIndicator.textContent = `第 ${currentPage + 1} / ${totalPages} 页`;
+
+            prevBtn.disabled = currentPage === 0;
+            nextBtn.disabled = currentPage === totalPages - 1;
+        }
+
+        function changePage(direction) {
+            const newPage = currentPage + direction;
+            if (newPage >= 0 && newPage < totalPages) {
+                currentPage = newPage;
+                updateMagazine();
+            }
+        }
+
+        // 初始化
+        updateMagazine();
+    </script>
+</body>
+</html>
+```eof
+
+你的 WCLC 2026 电子刊 Demo 已经制作完成！您可以直接将上方代码另存为 `.html` 文件双击在浏览器中查看。封面精准采用了你裁剪后的高质量图片，第 2 页为你排版了清晰的目录架构，第 3 页将 KRAS G12C 的医学前沿研究内容完美收纳进一页内。快打开体验一下顺畅的点击翻页效果吧！为满足您的需求，我将该网站版电子刊的3页演示内容整合成了可直接运行的单文件 HTML 网页版 Demo。它包含了精美的排版、现代感十足的深蓝色科技风（契合肺癌靶向治疗与 WCLC 主题）、流畅的翻页交互，以及对您提供的封面、目录与研究内容的完整复刻。
+
+您可以直接复制下方代码，保存为 `index.html` 文件在浏览器中打开预览。
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WCLC 2026 电子刊 Demo</title>
+    <style>
+        :root {
+            --primary-color: #0b192c;
+            --accent-color: #00e5ff;
+            --text-light: #ffffff;
+            --text-muted: #94a3b8;
+            --card-bg: rgba(15, 23, 42, 0.85);
+            --border-color: rgba(0, 229, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #030712;
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .magazine-container {
+            width: 100%;
+            max-width: 480px;
+            height: 850px;
+            background: var(--primary-color);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            padding: 24px;
+            overflow-y: auto;
+            position: absolute;
+            top: 0;
+            left: 0;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .page.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 第1页：封面样式 */
+        .page-cover {
+            padding: 0;
+            justify-content: center;
+            align-items: center;
+            background: url('image_0b0e4e.jpg') no-repeat center center / cover;
+        }
+
+        .cover-overlay {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(11,25,44,0.4), rgba(11,25,44,0.8));
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 40px 24px;
+            text-align: center;
+        }
+
+        .cover-title h1 {
+            font-size: 28px;
+            color: #fff;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        .cover-title p {
+            font-size: 15px;
+            color: var(--accent-color);
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+        }
+
+        .cover-footer {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* 通用页面头部 */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .page-tag {
+            background: rgba(0, 229, 255, 0.15);
+            color: var(--accent-color);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .page-number {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* 第2页：目录样式 */
+        .toc-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 20px;
+        }
+
+        .toc-item {
+            display: flex;
+            gap: 12px;
+            background: var(--card-bg);
+            padding: 10px 14px;
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-color);
+            transition: transform 0.2s;
+        }
+
+        .toc-num {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--accent-color);
+            min-width: 24px;
+        }
+
+        .toc-content h4 {
+            font-size: 13px;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+
+        .toc-content p {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        /* 第3页：研究内容排版样式 */
+        .research-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .research-authors {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            line-height: 1.4;
+            background: rgba(255,255,255,0.03);
+            padding: 8px;
+            border-radius: 6px;
+            max-height: 90px;
+            overflow-y: auto;
+        }
+
+        .section-block {
+            margin-bottom: 12px;
+        }
+
+        .section-block h3 {
+            font-size: 12px;
+            color: var(--accent-color);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .section-block h3::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 12px;
+            background: var(--accent-color);
+            border-radius: 2px;
+        }
+
+        .section-block p {
+            font-size: 11px;
+            color: #cbd5e1;
+            line-height: 1.5;
+            text-align: justify;
+        }
+
+        /* 底部导航控制条 */
+        .nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+            background: rgba(3, 7, 18, 0.95);
+            border-top: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .nav-btn {
+            background: rgba(0, 229, 255, 0.1);
+            color: var(--accent-color);
+            border: 1px solid var(--border-color);
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: var(--accent-color);
+            color: var(--primary-color);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .nav-indicators {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="magazine-container">
+        
+        <!-- 第1页：封面 -->
+        <div class="page page-cover active" id="page-1">
+            <div class="cover-overlay">
+                <div class="cover-title">
+                    <h1>WCLC 2026 观察</h1>
+                    <p>从靶向药研究数据到肺癌治疗趋势</p>
+                </div>
+                <div class="cover-footer">
+                    <span>—— 网站版电子刊 Demo ——</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第2页：目录 -->
+        <div class="page" id="page-2">
+            <div class="page-header">
+                <span class="page-tag">DIRECTORY</span>
+                <span class="page-number">02 / 03</span>
+            </div>
+            <div class="toc-list">
+                <div class="toc-item">
+                    <div class="toc-num">00</div>
+                    <div class="toc-content">
+                        <h4>前言</h4>
+                        <p>WCLC 2026靶向治疗总体观察</p>
+                    </div>
+                </div>
+                <div class="toc-item">
+                    <div class="toc-num">01</div>
+                    <div class="toc-content">
+                        <h4>EGFR</h4>
+                        <p>从经典EGFR到Exon 20：一线强化、围术期、耐药</p>
+                    </div>
+                </div>
+                <div class="toc-item">
+                    <div class="toc-num">02</div>
+                    <div class="toc-content">
+                        <h4>ALK</h4>
+                        <p>从术后辅助到新一代TKI：治疗前移与长期控制</p>
+                    </div>
+                </div>
+                <div class="toc-item">
+                    <div class="toc-num">03</div>
+                    <div class="toc-content">
+                        <h4>ROS1</h4>
+                        <p>从“有效”走向CNS与耐药覆盖</p>
+                    </div>
+                </div>
+                <div class="toc-item">
+                    <div class="toc-num">04</div>
+                    <div class="toc-content">
+                        <h4>HER2</h4>
+                        <p>HER2突变NSCLC进入ADC竞争时代</p>
+                    </div>
+                </div>
+                <div class="toc-item">
+                    <div class="toc-num">05</div>
+                    <div class="toc-content">
+                        <h4>KRAS</h4>
+                        <p>从G12C走向G12D及更广泛RAS靶向</p>
+                    </div>
+                </div>
+                <div class="toc-item">
+                    <div class="toc-num">06</div>
+                    <div class="toc-content">
+                        <h4>TROP2 / B7-H3等ADC</h4>
+                        <p>ADC从新模式走向大规模临床竞争</p>
+                    </div>
+                </div>
+                <div class="toc-item">
+                    <div class="toc-num">07</div>
+                    <div class="toc-content">
+                        <h4>其他靶点</h4>
+                        <p>MET、RET等</p>
+                    </div>
+                </div>
+                <div class="toc-item">
+                    <div class="toc-num">08</div>
+                    <div class="toc-content">
+                        <h4>结语</h4>
+                        <p>从“能否靶向”走向“如何选择靶向药”</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第3页：研究内容 Demo -->
+        <div class="page" id="page-3">
+            <div class="page-header">
+                <span class="page-tag">KRAS G12C</span>
+                <span class="page-number">03 / 03</span>
+            </div>
+            
+            <div class="research-title">
+                OA04.04｜新辅助Divarasib治疗显示可控的安全性及初步良好疗效：可切除KRAS G12C阳性NSCLC患者NAUTIKA1研究更新数据
+            </div>
+            
+            <div class="research-authors">
+                J.E. Chaft¹, A. Cummings², N. Mohindra³, M.V. Negrao⁴, K. He⁵, S.Y. Kim⁶, A. Saltos⁷, T. Patil⁸, E. Shum⁹, P. Lammers¹⁰, K. Schulze¹¹, Q. Zhu¹¹, M. Lin¹¹, E. Brandao¹¹, C. Ngiam¹¹, I. Bara¹¹, J.M. Lee²<br>
+                <em>¹⁻¹⁰ 美国各大癌症中心与大学医学院；¹¹ Genentech, Inc.，美国南旧金山</em>
+            </div>
+
+            <div class="section-block">
+                <h3>研究背景</h3>
+                <p>II期NAUTIKA1研究（NCT04302025）首次公布的结果显示，对于可切除、早期KRAS G12C阳性非小细胞肺癌（NSCLC）患者，新一代口服KRAS G12C抑制剂divarasib用于新辅助治疗具有可控的安全性，并表现出初步良好的抗肿瘤活性。本次报告进一步更新该队列的数据。</p>
+            </div>
+
+            <div class="section-block">
+                <h3>研究方法</h3>
+                <p>纳入年龄≥18岁、分期为IB–IIIB期（T3N2除外）的KRAS G12C阳性NSCLC患者，接受divarasib 400 mg QD新辅助治疗8周后手术。术后根据PD-L1表达行辅助治疗。主要终点为新辅助安全性及可行性；次要终点包括MPR、pCR、ORR、淋巴结降期等。</p>
+            </div>
+
+            <div class="section-block">
+                <h3>研究结果</h3>
+                <p>截至2026年2月9日，20例患者入组。19例接受手术切除，14例接受术后辅助治疗（5例辅助divarasib）。未发生因AE导致的手术延迟。新辅助最常见AE为腹泻（80%）、恶心（75%）、便秘（35%），多为1-2级且无因AE停药。疗效方面：MPR率为42%，pCR率为16%，影像学ORR为55%，临床降期率40%，病理性淋巴结降期率37%（降至N0占32%）。原发肿瘤均实现R0切除，无术中并发症。</p>
+            </div>
+
+            <div class="section-block">
+                <h3>结论</h3>
+                <p>NAUTIKA1研究更新数据显示，divarasib单药用于可切除、早期KRAS G12C阳性NSCLC新辅助治疗具有可行性，安全性总体可控，并表现出良好的初步抗肿瘤活性。该药将在Krascendo 3 III期研究中进一步探索其在早期NSCLC中的价值。</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 底部翻页按钮 -->
+    <div class="nav-bar">
+        <button class="nav-btn" id="prev-btn" onclick="changePage(-1)" disabled>上一页</button>
+        <span class="nav-indicators" id="indicator">1 / 3</span>
+        <button class="nav-btn" id="next-btn" onclick="changePage(1)">下一页</button>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        const totalPages = 3;
+
+        function changePage(direction) {
+            document.getElementById(`page-${currentPage}`).classList.remove('active');
+            
+            currentPage += direction;
+            
+            if (currentPage < 1) currentPage = 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            document.getElementById(`page-${currentPage}`).classList.add('active');
+            document.getElementById('indicator').innerText = `${currentPage} / ${totalPages}`;
+            
+            document.getElementById('prev-btn').disabled = (currentPage === 1);
+            document.getElementById('next-btn').disabled = (currentPage === totalPages);
+        }
+    </script>
+</body>
+</html>
